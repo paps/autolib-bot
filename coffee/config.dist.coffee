@@ -1,0 +1,2 @@
+window.autolibBotCfg =
+	phantombusterKey: 'xxx'
