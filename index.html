@@ -3,8 +3,23 @@
 	<head>
 		<meta charset="utf-8">
 		<title>Autolib Bot</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=0">
+		<style type="text/css">
+			body { margin-bottom: 200px; }
+		</style>
 	</head>
 	<body>
+		<form id="searchForm" style="text-align: center;">
+			<input id="searchInput" type="text"/>
+			<input type="submit" value="Search"/>
+		</form>
+		<div id="searchResults"></div>
+		<hr/>
+		<div style="text-align: center;">
+			<input id="getStatus" type="button" value="Get Phantombuster status"/>
+			<input id="abort" type="button" value="Abort agent"/>
+		</div>
+		<pre id="statusResult"></pre>
 		<script src="lib/zepto/zepto.min.js"></script>
 		<script src="coffee/config.js"></script>
 		<script src="coffee/main.js"></script>
