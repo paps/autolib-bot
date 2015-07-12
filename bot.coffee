@@ -20,8 +20,8 @@ Pushover = require 'lib-Pushover-beta'
 
 if (typeof(buster.argument.autolibLogin) isnt 'string') or
 (typeof(buster.argument.autolibPassword) isnt 'string') or
-(typeof(buster.argument.pushoverUserKey) isnt 'string') or
 (typeof(buster.argument.pushoverAppToken) isnt 'string') or
+(typeof(buster.argument.pushoverUserKey) isnt 'string') or
 (typeof(buster.argument.type) isnt 'string') or
 (typeof(buster.argument.mode) isnt 'string') or
 (typeof(buster.argument.stationName) isnt 'string') or
@@ -32,8 +32,8 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 		{
 			"autolibLogin": "",
 			"autolibPassword": "",
-			"pushoverUserKey": "",
 			"pushoverAppToken": "",
+			"pushoverUserKey": "",
 			"type": "parking/vehicle",
 			"mode": "check/reserve",
 			"stationName": "Paris/Dalayrac/19",
@@ -45,6 +45,12 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 
 pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
 
-pushover.send 'ceci est un test', (err, res) ->
-	console.log "err: #{err}, res: #{res}"
+casper.start 'https://www.autolib.eu/en/404/', () ->
+	pushover.send 'ceci est un test', (err, res) ->
+		console.log "err: #{err}, res: #{res}"
+
+casper.wait 10000
+
+casper.run () ->
+	console.log 'All CasperJS steps done.'
 	casper.exit()
