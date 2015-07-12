@@ -20,13 +20,12 @@ $ () ->
 	page.searchForm.submit (e) ->
 		page.searchResults.text 'Loading results...'
 		query = page.searchInput.val()
-		$.getJSON "http://data.iledefrance.fr/api/records/1.0/search?dataset=stations_et_espaces_autolib&q=#{encodeURIComponent query}&facet=ville&facet=type_de_station", (data) ->
+		$.getJSON "https://data.iledefrance.fr/api/records/1.0/search?dataset=stations_et_espaces_autolib&q=#{encodeURIComponent query}&facet=ville&facet=type_de_station", (data) ->
 			if data? and (typeof(data) is 'object')
 				if data.nhits > 0
 					page.searchResults.empty()
 					for station in data.records
 						((station) ->
-							console.log JSON.stringify station, undefined, 2
 							actionsShown = no
 							box = $('<div>').css('border', '1px solid #555').css('padding', '10px').css('margin', '10px')
 							clickableBox = $('<div>')
