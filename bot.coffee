@@ -12,9 +12,9 @@ casper = require('casper').create
 		width: 1280
 		height: 1024
 	onResourceRequested: (casper, request, net) ->
-		if ((request.url.indexOf 'https://www.facebook.com') is 0) or
-		((request.url.indexOf 'https://s-static.ak.facebook.com') is 0)
-			net.abort()
+		console.log 'request >>>' + JSON.stringify request, undefined, 2
+		console.log 'net >>>' + JSON.stringify net, undefined, 2
+
 buster = require('phantombuster').create(casper)
 Pushover = require 'lib-Pushover-beta'
 
@@ -44,10 +44,6 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 	casper.exit 1
 
 pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
-
-casper.page.onResourceRequested = (data, req) ->
-	console.log 'DATA >>>' + JSON.stringify data, undefined, 2
-	console.log 'REQ >>>' + JSON.stringify req, undefined, 2
 
 casper.start 'https://www.autolib.eu/en/404/', () ->
 	pushover.send 'ceci est un test', (err, res) ->
