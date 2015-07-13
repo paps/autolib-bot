@@ -45,7 +45,7 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 
 pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
 
-casper.start 'https://www.autolib.eu/en/404/', () ->
+casper.start 'http://phantomjs.org/api/webpage/handler/on-resource-requested.html', () ->
 	pushover.send 'ceci est un test', (err, res) ->
 		console.log "err: #{err}, res: #{res}"
 
