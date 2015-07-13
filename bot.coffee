@@ -46,6 +46,9 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
 
 casper.start 'https://www.autolib.eu/en/404/', () ->
+	casper.page.onResourceRequested = (data, req) ->
+		console.log 'DATA >>>' + JSON.stringify data, undefined, 2
+		console.log 'REQ >>>' + JSON.stringify req, undefined, 2
 	pushover.send 'ceci est un test', (err, res) ->
 		console.log "err: #{err}, res: #{res}"
 
