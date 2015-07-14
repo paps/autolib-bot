@@ -1,6 +1,6 @@
 'use strict'
 'phantombuster command: casperjs'
-'phantombuster dependencies: lib-Pushover-beta.coffee'
+#'phantombuster dependencies: lib-Pushover-beta.coffee'
 
 casper = require('casper').create
 	#verbose: yes
@@ -12,14 +12,15 @@ casper = require('casper').create
 		width: 1280
 		height: 1024
 	onResourceRequested: (casper, request, net) ->
-		console.log 'request >>>' + JSON.stringify request, undefined, 2
-		console.log 'net >>>' + JSON.stringify net, undefined, 2
+		#console.log 'request >>>' + JSON.stringify request, undefined, 2
+		#console.log 'net >>>' + JSON.stringify net, undefined, 2
 
 buster = require('phantombuster').create(casper)
-Pushover = require 'lib-Pushover-beta'
+#Pushover = require 'lib-Pushover-beta'
 
 if (typeof(buster.argument.autolibLogin) isnt 'string') or
 (typeof(buster.argument.autolibPassword) isnt 'string') or
+(typeof(buster.argument.autolibId) isnt 'string') or
 (typeof(buster.argument.pushoverAppToken) isnt 'string') or
 (typeof(buster.argument.pushoverUserKey) isnt 'string') or
 (typeof(buster.argument.type) isnt 'string') or
@@ -32,24 +33,84 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 		{
 			"autolibLogin": "",
 			"autolibPassword": "",
+			"autolibId": "123456",
 			"pushoverAppToken": "",
 			"pushoverUserKey": "",
 			"type": "parking/vehicle",
 			"mode": "check/reserve",
 			"stationName": "Paris/Dalayrac/19",
-			"stationPostalCode": 10000,
-			"stationLat": 0.000001,
-			"stationLong": 0.000001
+			"stationPostalCode": 75002,
+			"stationLat": 48.868181,
+			"stationLong": 2.335097
 		}'''
 	casper.exit 1
+if not (buster.argument.type in ['vehicle', 'parking'])
+	console.log 'Argument "type" must be "vehicle" or "parking"'
+	casper.exit 1
+if not (buster.argument.mode in ['check', 'reserve'])
+	console.log 'Argument "mode" must be "check" or "reserve"'
+	casper.exit 1
 
-pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
+#pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
 
-casper.start 'http://phantomjs.org/api/webpage/handler/on-resource-requested.html', () ->
-	pushover.send 'ceci est un test', (err, res) ->
-		console.log "err: #{err}, res: #{res}"
+if buster.argument.type is 'vehicle'
+	searchPageAddress = "https://www.autolib.eu/account/reservations/#{buster.argument.autolibId}/carreservation/?full_address=#{buster.argument.stationLat}%2C#{buster.argument.stationLong}"
+else
+	searchPageAddress = "https://www.autolib.eu/account/reservations/#{buster.argument.autolibId}/parkreservation/?full_address=#{buster.argument.stationLat}%2C#{buster.argument.stationLong}"
 
-casper.wait 10000
+console.log "Opening login page"
+casper.start 'https://www.autolib.eu/en/404/', () ->
+	console.log "Logging in"
+	casper.fill 'form',
+		username: buster.argument.autolibLogin
+		password: buster.argument.autolibPassword
+		next: '/language/en/',
+		yes
+
+casper.thenOpen searchPageAddress, () ->
+	console.log "Searching for station #{buster.argument.stationName}"
+	words = buster.argument.stationName.split '/'
+	if words.length isnt 3
+		console.log "Invalid station name (#{words.length} words instead of 3)"
+		casper.exit 1
+	words[0] = ' ' + words[0].trim() + ' ' # city
+	words[1] = ' ' + words[1].trim() # street
+	words[2] = words[2].trim() + ' ' # number
+	words.push ' ' + buster.argument.stationPostalCode + ' ' # postal code
+	getOptionString = (words) ->
+		try
+			optionStringMatches = []
+			lastOptionValue = ''
+			jQuery('#id_station > option').each () ->
+				optionString = jQuery(@).text()
+				wordMatches = 0
+				for word in words
+					if optionString.indexOf(word) >= 0
+						++wordMatches
+				if wordMatches is words.length
+					optionStringMatches.push optionString
+					lastOptionValue = jQuery(@).attr 'value'
+			if optionStringMatches.length is 1
+				jQuery('#id_station').val lastOptionValue
+				return optionStringMatches[0]
+			else
+				__utils__.echo "#{optionStringMatches.length} stations matched with words [#{words.join ','}]"
+		catch e
+			__utils__.echo e.toString()
+		return 0
+	optionString = casper.evaluate getOptionString, words
+	if typeof(optionString) isnt 'string'
+		console.log "Could not find station #{buster.argument.stationName}"
+		casper.exit 1
+	console.log "Found station #{optionString}"
+	matches = optionString.match /^.*\((\d) .*\)$/
+	if matches isnt null and matches.length is 2
+		;
+
+casper.then () ->
+	casper.capture "screen1.jpg"
+	buster.save "screen1.jpg", (err, path) ->
+		console.log "Screenshot - err: #{err}, path: #{path}"
 
 casper.run () ->
 	console.log 'All CasperJS steps done.'
