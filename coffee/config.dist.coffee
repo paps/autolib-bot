@@ -5,3 +5,4 @@ window.autolibBotCfg =
 	agentId: 1000
 	autolibLogin: 'xxx'
 	autolibPassword: 'xxx'
+	autolibId: '123456' # autolib account identifier

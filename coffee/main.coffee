@@ -15,7 +15,21 @@ $ () ->
 
 	startBot = (station, type, mode) ->
 		if confirm "Type: #{type.toUpperCase()}, mode: #{mode.toUpperCase()}, station: #{station.fields.nom_de_la_station.toUpperCase()}. Start bot?"
-			console.log 'ok'
+			argument =
+				autolibLogin: cfg.autolibLogin
+				autolibPassword: cfg.autolibPassword
+				autolibId: cfg.autolibId
+				pushoverAppToken: cfg.pushoverAppToken
+				pushoverUserKey: cfg.pushoverUserKey
+				type: type
+				mode: mode
+				stationName: station.fields.nom_de_la_station
+				stationPostalCode: station.fields.code_postal
+				stationLat: station.fields.field13[0]
+				stationLong: station.fields.field13[1]
+			argument = JSON.stringify argument
+			$.getJSON "https://phantombuster.com/api/v1/agent/#{cfg.agentId}/launch?key=#{cfg.phantombusterKey}&argument=#{encodeURIComponent argument}&command=casperjs", (data) ->
+				page.statusResult.text JSON.stringify data, undefined, 2
 
 	page.searchForm.submit (e) ->
 		page.searchResults.text 'Loading results...'
@@ -30,7 +44,8 @@ $ () ->
 							box = $('<div>').css('border', '1px solid #555').css('padding', '10px').css('margin', '10px')
 							clickableBox = $('<div>')
 							clickableBox.append $('<div>').css('font-weight', 'bold').text station.fields.nom_de_la_station
-							clickableBox.append $('<div>').text "#{station.fields.type_de_station}, #{station.fields.nombre_total_de_places} slots"
+							clickableBox.append $('<div>').text "#{station.fields.type_de_station} of #{station.fields.places_autolib} slots (+#{station.fields.places_recharge_tiers})"
+							clickableBox.append $('<div>').css('text-align', 'right').append $('<small>').text "#{station.fields.field13[0]}, #{station.fields.field13[1]}, #{station.fields.code_postal}"
 							actions = $('<div>').css('text-align', 'center')
 							box.append clickableBox
 							box.append actions
