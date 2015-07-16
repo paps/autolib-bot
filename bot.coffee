@@ -51,8 +51,6 @@ if not (buster.argument.mode in ['check', 'reserve'])
 	console.log 'Argument "mode" must be "check" or "reserve"'
 	casper.exit 1
 
-buster.argument.stationName = "Villejuif/René Thibert/7"
-
 #pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
 
 searchStation = () ->
@@ -94,19 +92,20 @@ searchStation = () ->
 		optionString = casper.evaluate getOptionString, words
 		if typeof(optionString) isnt 'string'
 			console.log "Could not find station #{buster.argument.stationName}"
-			casper.exit 1
-		console.log "Found string \"#{optionString}\""
-		matches = optionString.match /^.*\((\d) .*\)$/
-		if matches isnt null and matches.length is 2
-			available = parseInt matches[1], 10
-			if isFinite(available) and (available >= 0) and (available <= 9)
-				processStation available
-			else
-				console.log "Got an invalid number of #{buster.argument.type}s from string \"#{optionString}\""
-				casper.exit 1
+			exitWithScreenshot 'station-no-found'
 		else
-			console.log "Regular expression failed to find the number of #{buster.argument.type}s from string \"#{optionString}\""
-			casper.exit 1
+			console.log "Found string \"#{optionString}\""
+			matches = optionString.match /^.*\((\d) .*\)$/
+			if matches isnt null and matches.length is 2
+				available = parseInt matches[1], 10
+				if isFinite(available) and (available >= 0) and (available <= 9)
+					processStation available
+				else
+					console.log "Got an invalid number of #{buster.argument.type}s from string \"#{optionString}\""
+					exitWithScreenshot 'invalid-number'
+			else
+				console.log "Regular expression failed to find the number of #{buster.argument.type}s from string \"#{optionString}\""
+				exitWithScreenshot 'regex-number-failure'
 
 processStation = (available) ->
 	if available is 0
@@ -114,11 +113,33 @@ processStation = (available) ->
 		casper.wait 10000
 		searchStation()
 	else
+		console.log "#{available} #{buster.argument.type}#{if available > 1 then 's are' else ' is'} available"
 		if buster.argument.mode is 'check'
-			console.log "#{available} #{buster.argument.type}#{if available > 1 then 's are' else ' is'} available"
+			;
 		else
 			casper.evaluate () ->
 				jQuery('#reserve-form').submit()
+			casper.wait 2000
+			casper.then () ->
+				confirmReservation()
+
+confirmReservation = () ->
+	record = casper.evaluate () -> jQuery('.article > p:nth-child(1)').text().trim()
+	expiration = casper.evaluate () -> jQuery('.article > p:nth-child(1)').text().trim()
+	if (record.indexOf("Your #{if buster.argument.type is 'vehicle' then 'car' else 'parking'} reservation at station ") is 0) and (expiration.indexOf('Your reservation will expire on ') is 0)
+		console.log "Reservation of #{buster.argument.type} appears successful:"
+		console.log " -> #{record}"
+		console.log " -> #{expiration}"
+	else
+		console.log "Could not find confirmation messages for this reservation"
+		exitWithScreenshot 'no-confirmation-messages'
+
+exitWithScreenshot = (name) ->
+	casper.then () ->
+		casper.capture "#{name}.jpg"
+		buster.save "#{name}.jpg", (err, path) ->
+			console.log "Screenshot - err: #{err}, path: #{path}"
+	casper.then () -> casper.exit 1
 
 casper.start 'https://www.autolib.eu/en/404/', () ->
 	console.log 'Logging in'
@@ -127,11 +148,6 @@ casper.start 'https://www.autolib.eu/en/404/', () ->
 		password: buster.argument.autolibPassword
 		next: '/language/en/',
 		yes
-
-#casper.then () ->
-#	casper.capture "screen1.jpg"
-#	buster.save "screen1.jpg", (err, path) ->
-#		console.log "Screenshot - err: #{err}, path: #{path}"
 
 searchStation()
 
