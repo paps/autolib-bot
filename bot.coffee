@@ -123,7 +123,7 @@ processStation = (available) ->
 			casper.exit 1 # TODO pushover before exit
 		else
 			++nbRefresh
-			buster.progressHint (elapsedSeconds / buster.argument.maxExecutionTime), "Try #{nbRefresh}"
+			buster.progressHint (elapsedSeconds / buster.argument.maxExecutionTime), "#{if buster.argument.mode is 'check' then 'Checking for' else 'Reserving'} a #{buster.argument.type}, try #{nbRefresh}"
 			casper.wait buster.argument.refreshRate * 1000
 			searchStation()
 	else
