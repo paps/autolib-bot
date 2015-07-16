@@ -134,8 +134,7 @@ processStation = (available) ->
 			casper.evaluate () ->
 				jQuery('#reserve-form').submit()
 			casper.wait 2000
-			casper.then () ->
-				confirmReservation()
+			casper.then () -> confirmReservation()
 
 confirmReservation = () ->
 	record = casper.evaluate () -> jQuery('.article > p:nth-child(1)').text().trim()
