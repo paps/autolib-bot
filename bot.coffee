@@ -28,7 +28,9 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 (typeof(buster.argument.stationName) isnt 'string') or
 (typeof(buster.argument.stationPostalCode) isnt 'number') or
 (typeof(buster.argument.stationLat) isnt 'number') or
-(typeof(buster.argument.stationLong) isnt 'number')
+(typeof(buster.argument.stationLong) isnt 'number') or
+(typeof(buster.argument.maxExecutionTime) isnt 'number') or
+(typeof(buster.argument.refreshRate) isnt 'number')
 	console.log '''Invalid argument
 		{
 			"autolibLogin": "",
@@ -41,7 +43,9 @@ if (typeof(buster.argument.autolibLogin) isnt 'string') or
 			"stationName": "Paris/Dalayrac/19",
 			"stationPostalCode": 75002,
 			"stationLat": 48.868181,
-			"stationLong": 2.335097
+			"stationLong": 2.335097,
+			"maxExecutionTime": 3600,
+			"refreshRate": 10
 		}'''
 	casper.exit 1
 if not (buster.argument.type in ['vehicle', 'parking'])
@@ -52,6 +56,9 @@ if not (buster.argument.mode in ['check', 'reserve'])
 	casper.exit 1
 
 #pushover = new Pushover buster.argument.pushoverAppToken, buster.argument.pushoverUserKey
+
+startTime = Date.now()
+nbRefresh = 0
 
 searchStation = () ->
 	if buster.argument.type is 'vehicle'
@@ -109,9 +116,16 @@ searchStation = () ->
 
 processStation = (available) ->
 	if available is 0
-		console.log "No #{buster.argument.type} available, retrying"
-		casper.wait 10000
-		searchStation()
+		console.log "No #{buster.argument.type} available"
+		elapsedSeconds = (Date.now() - startTime) / 1000
+		if elapsedSeconds > buster.argument.maxExecutionTime
+			console.log "#{Math.round elapsedSeconds} seconds have elapsed and a #{buster.argument.type} was never available at #{buster.argument.stationName}"
+			casper.exit 1 # TODO pushover before exit
+		else
+			++nbRefresh
+			buster.progressHint (elapsedSeconds / buster.argument.maxExecutionTime), "Try #{nbRefresh}"
+			casper.wait buster.argument.refreshRate * 1000
+			searchStation()
 	else
 		console.log "#{available} #{buster.argument.type}#{if available > 1 then 's are' else ' is'} available"
 		if buster.argument.mode is 'check'
@@ -125,11 +139,12 @@ processStation = (available) ->
 
 confirmReservation = () ->
 	record = casper.evaluate () -> jQuery('.article > p:nth-child(1)').text().trim()
-	expiration = casper.evaluate () -> jQuery('.article > p:nth-child(1)').text().trim()
+	expiration = casper.evaluate () -> jQuery('.article > p:nth-child(2)').text().trim()
 	if (record.indexOf("Your #{if buster.argument.type is 'vehicle' then 'car' else 'parking'} reservation at station ") is 0) and (expiration.indexOf('Your reservation will expire on ') is 0)
 		console.log "Reservation of #{buster.argument.type} appears successful:"
 		console.log " -> #{record}"
 		console.log " -> #{expiration}"
+		# TODO pushover before exit
 	else
 		console.log "Could not find confirmation messages for this reservation"
 		exitWithScreenshot 'no-confirmation-messages'
@@ -139,7 +154,7 @@ exitWithScreenshot = (name) ->
 		casper.capture "#{name}.jpg"
 		buster.save "#{name}.jpg", (err, path) ->
 			console.log "Screenshot - err: #{err}, path: #{path}"
-	casper.then () -> casper.exit 1
+	casper.then () -> casper.exit 1 # TODO pushover before exit
 
 casper.start 'https://www.autolib.eu/en/404/', () ->
 	console.log 'Logging in'

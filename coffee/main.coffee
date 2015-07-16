@@ -27,6 +27,8 @@ $ () ->
 				stationPostalCode: station.fields.code_postal
 				stationLat: station.fields.field13[0]
 				stationLong: station.fields.field13[1]
+				maxExecutionTime: cfg.maxExecutionTime
+				refreshRate: cfg.refreshRate
 			argument = JSON.stringify argument
 			$.getJSON "https://phantombuster.com/api/v1/agent/#{cfg.agentId}/launch?key=#{cfg.phantombusterKey}&argument=#{encodeURIComponent argument}&command=casperjs", (data) ->
 				page.statusResult.text JSON.stringify data, undefined, 2
