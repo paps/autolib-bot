@@ -11,8 +11,16 @@ casper = require('casper').create
 		width: 1280
 		height: 1024
 	onResourceRequested: (casper, request, net) ->
-		#console.log 'request >>>' + JSON.stringify request, undefined, 2
-		#console.log 'net >>>' + JSON.stringify net, undefined, 2
+		blocked = [
+			'maps.google.com'
+			'maps.gstatic.com'
+			'maps.googleapis.com'
+			'fonts.googleapis.com'
+		]
+		for domain in blocked
+			if (request.url.indexOf('https://' + domain) is 0) or (request.url.indexOf('http://' + domain) is 0) or (request.url.indexOf(domain) is 0)
+				console.log "> Blocked: #{request.url}"
+				return net.abort()
 
 buster = require('phantombuster').create casper
 
