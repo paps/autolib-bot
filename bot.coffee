@@ -1,5 +1,6 @@
 'use strict'
 'phantombuster command: casperjs'
+'phantombuster package: 2'
 
 casper = require('casper').create
 	#verbose: yes
