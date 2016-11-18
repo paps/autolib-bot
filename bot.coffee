@@ -124,7 +124,7 @@ processStation = (available) ->
 		if elapsedSeconds > buster.argument.maxExecutionTime
 			message = "#{Math.round elapsedSeconds} seconds have elapsed and a #{buster.argument.type} was never available at #{buster.argument.stationName}"
 			console.log message
-			buster.notify message, { title: notifTitle }, () -> casper.exit 1
+			buster.pushover message, { title: notifTitle }, () -> casper.exit 1
 		else
 			++nbRefresh
 			buster.progressHint (elapsedSeconds / buster.argument.maxExecutionTime), "#{if buster.argument.mode is 'check' then 'Checking for' else 'Reserving'} a #{buster.argument.type}, try #{nbRefresh}"
@@ -134,7 +134,7 @@ processStation = (available) ->
 		message = "#{available} #{buster.argument.type}#{if available > 1 then 's are' else ' is'} available"
 		console.log message
 		if buster.argument.mode is 'check'
-			buster.notify message, { title: notifTitle }
+			buster.pushover message, { title: notifTitle }
 		else
 			casper.evaluate () ->
 				jQuery('#reserve-form').submit()
@@ -151,7 +151,7 @@ confirmReservation = () ->
 			 -> #{expiration}
 			"""
 		console.log message
-		buster.notify message, { title: notifTitle }
+		buster.pushover message, { title: notifTitle }
 	else
 		exitWithScreenshot "Could not find confirmation messages for this reservation", 'no-confirmation-messages'
 
@@ -170,7 +170,7 @@ exitWithScreenshot = (message, name) ->
 		if screenshotPath?
 			options.url = screenshotPath
 			options.url_title = 'Screenshot of error'
-		buster.notify message, options, () -> casper.exit 1
+		buster.pushover message, options, () -> casper.exit 1
 
 casper.start 'https://www.autolib.eu/en/404/', () ->
 	console.log 'Logging in'
