@@ -66,13 +66,16 @@ startTime = Date.now()
 nbRefresh = 0
 notifTitle = "#{if buster.argument.mode is 'check' then 'Checking for' else 'Reserving'} a #{buster.argument.type} in #{buster.argument.stationName}"
 
+searchTries = 0
+maxSearchTries = 3
 searchStation = () ->
+	++searchTries
 	if buster.argument.type is 'vehicle'
-		searchPageAddress = "https://www.autolib.eu/account/reservations/#{buster.argument.autolibId}/carreservation/?full_address=#{buster.argument.stationLat}%2C#{buster.argument.stationLong}"
+		searchPageAddress = "https://moncompte.autolib.eu/account/reservations/#{buster.argument.autolibId}/carreservation/?full_address=#{buster.argument.stationLat}%2C#{buster.argument.stationLong}"
 	else
-		searchPageAddress = "https://www.autolib.eu/account/reservations/#{buster.argument.autolibId}/parkreservation/?full_address=#{buster.argument.stationLat}%2C#{buster.argument.stationLong}"
+		searchPageAddress = "https://moncompte.autolib.eu/account/reservations/#{buster.argument.autolibId}/parkreservation/?full_address=#{buster.argument.stationLat}%2C#{buster.argument.stationLong}"
 	casper.thenOpen searchPageAddress, () ->
-		console.log "Searching for station #{buster.argument.stationName}"
+		console.log "Searching for station #{buster.argument.stationName} (try #{searchTries}/#{maxSearchTries})"
 		words = buster.argument.stationName.split '/'
 		if words.length isnt 3
 			console.log "Invalid station name (#{words.length} words instead of 3)"
@@ -104,18 +107,28 @@ searchStation = () ->
 			return 0
 		optionString = casper.evaluate getOptionString, words
 		if typeof(optionString) isnt 'string'
-			exitWithScreenshot "Could not find station #{buster.argument.stationName}", 'station-no-found'
+			if searchTries >= maxSearchTries
+				exitWithScreenshot "Could not find station #{buster.argument.stationName}", 'station-no-found'
+			else
+				searchStation()
 		else
 			console.log "Found string \"#{optionString}\""
 			matches = optionString.match /^.*\((\d) .*\)$/
 			if matches isnt null and matches.length is 2
 				available = parseInt matches[1], 10
 				if isFinite(available) and (available >= 0) and (available <= 9)
+					searchTries = 0
 					processStation available
 				else
-					exitWithScreenshot "Got an invalid number of #{buster.argument.type}s from string \"#{optionString}\"", 'invalid-number'
+					if searchTries >= maxSearchTries
+						exitWithScreenshot "Got an invalid number of #{buster.argument.type}s from string \"#{optionString}\"", 'invalid-number'
+					else
+						searchStation()
 			else
-				exitWithScreenshot "Regular expression failed to find the number of #{buster.argument.type}s from string \"#{optionString}\"", 'regex-number-failure'
+				if searchTries >= maxSearchTries
+					exitWithScreenshot "Regular expression failed to find the number of #{buster.argument.type}s from string \"#{optionString}\"", 'regex-number-failure'
+				else
+					searchStation()
 
 processStation = (available) ->
 	if available is 0
